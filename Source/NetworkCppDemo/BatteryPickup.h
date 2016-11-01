@@ -16,5 +16,5 @@ class NETWORKCPPDEMO_API ABatteryPickup : public APickup
 public:
 	ABatteryPickup();
 	
-	
+	void WasCollected_Implementation() override;
 };

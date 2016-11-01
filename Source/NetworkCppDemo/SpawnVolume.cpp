@@ -14,6 +14,8 @@ ASpawnVolume::ASpawnVolume()
 		RootComponent = WhereToSpawn;
 
 		//set some base values for range
+		SpawnDelayRangeLow = 1.0f;
+		SpawnDelayRangeHigh = 3.5f;
 	}
 }
 
@@ -21,6 +23,9 @@ void ASpawnVolume::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	//Delay for a bit before spawning the next pickup
+	SpawnDelay = FMath::FRandRange(SpawnDelayRangeLow, SpawnDelayRangeHigh);
+	GetWorldTimerManager().SetTimer(SpawnTimer, this, &ASpawnVolume::SpawnPickup, SpawnDelay, false);
 }
 
 void ASpawnVolume::Tick( float DeltaTime )
@@ -67,6 +72,10 @@ void ASpawnVolume::SpawnPickup()
 
 			//drop the new pickup into the world
 			APickup* const SpawnPickup = World->SpawnActor<APickup>(WhatToSpawn, SpawnLocation, SpawnRotation, SpawnParams);
+
+			//Delay for a bit before spawning the next pickup
+			SpawnDelay = FMath::FRandRange(SpawnDelayRangeLow, SpawnDelayRangeHigh);
+			GetWorldTimerManager().SetTimer(SpawnTimer, this, &ASpawnVolume::SpawnPickup, SpawnDelay, false);
 		}
 	}
 }

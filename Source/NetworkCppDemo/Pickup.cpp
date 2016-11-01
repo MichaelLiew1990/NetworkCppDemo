@@ -39,6 +39,11 @@ void APickup::SetActiveState(bool b)
 	}
 }
 
+void APickup::WasCollected_Implementation() 
+{
+	UE_LOG(LogTemp, Warning, TEXT("APickup::WasCollected_Implementation"));
+}
+
 void APickup::OnRep_IsActive()
 {
 

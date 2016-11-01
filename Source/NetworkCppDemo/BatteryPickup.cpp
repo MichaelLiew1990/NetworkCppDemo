@@ -13,3 +13,10 @@ ABatteryPickup::ABatteryPickup()
 	GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
 	GetStaticMeshComponent()->SetSimulatePhysics(true);
 }
+
+void ABatteryPickup::WasCollected_Implementation()
+{
+	Super::WasCollected_Implementation();
+
+	Destroy();
+}
