@@ -3,6 +3,8 @@
 #include "NetworkCppDemo.h"
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "NetworkCppDemoCharacter.h"
+#include "Net/UnrealNetwork.h"
+#include "Pickup.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ANetworkCppDemoCharacter
@@ -38,13 +40,24 @@ ANetworkCppDemoCharacter::ANetworkCppDemoCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	CollectionSphereRadius = 120.f;
+
 	// Create a follow CollectionSphere
 	CollectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollectionSphere"));
-	CollectionSphere->SetSphereRadius(10.f);
 	CollectionSphere->SetupAttachment(RootComponent);
+	CollectionSphere->SetSphereRadius(CollectionSphereRadius);
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+}
+
+void ANetworkCppDemoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ANetworkCppDemoCharacter, CollectionSphereRadius);
+	DOREPLIFETIME(ANetworkCppDemoCharacter, InitialPower);
+	DOREPLIFETIME(ANetworkCppDemoCharacter, CurrentPower);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -74,8 +87,56 @@ void ANetworkCppDemoCharacter::SetupPlayerInputComponent(class UInputComponent* 
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ANetworkCppDemoCharacter::OnResetVR);
+
+	//handle collecting pickups
+	PlayerInputComponent->BindAction("CollectPickups", IE_Pressed, this, &ANetworkCppDemoCharacter::CollectPickups);
 }
 
+void ANetworkCppDemoCharacter::CollectPickups()
+{
+	ServerCollectPickups();
+}
+
+bool ANetworkCppDemoCharacter::ServerCollectPickups_Validate()
+{
+	return true;
+}
+
+void ANetworkCppDemoCharacter::ServerCollectPickups_Implementation()
+{
+	if (Role == ROLE_Authority)
+	{
+		TArray<AActor*> CollectedActors;
+		CollectionSphere->GetOverlappingActors(CollectedActors);
+		for (int i = 0; i < CollectedActors.Num(); i++)
+		{
+			APickup* TestPickup = Cast<APickup>(CollectedActors[i]);
+			if (TestPickup != NULL && !TestPickup->IsPendingKill() && TestPickup->IsActive())
+			{
+				TestPickup->PickedUpBy(this);
+				TestPickup->SetActive(false);
+			}
+		}
+	}
+}
+
+float ANetworkCppDemoCharacter::GetInitialPower()
+{
+	return InitialPower;
+}
+
+float ANetworkCppDemoCharacter::GetCurrentPower()
+{
+	return CurrentPower;
+}
+
+void ANetworkCppDemoCharacter::UpdatePower(float Delta)
+{
+	if (Role == ROLE_Authority)
+	{
+		CurrentPower += Delta;
+	}
+}
 
 void ANetworkCppDemoCharacter::OnResetVR()
 {

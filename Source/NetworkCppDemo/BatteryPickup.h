@@ -15,6 +15,15 @@ class NETWORKCPPDEMO_API ABatteryPickup : public APickup
 	
 public:
 	ABatteryPickup();
-	
-	void WasCollected_Implementation() override;
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(BlueprintAuthorityOnly, Category = "Pickup")
+	void PickedUpBy(APawn* Pawn) override;
+
+	float GetPower();
+
+protected:
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Power", meta = (BlueprintProtected = "true"))
+	float BatteryPower;
 };

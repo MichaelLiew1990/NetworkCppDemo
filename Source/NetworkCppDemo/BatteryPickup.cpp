@@ -2,7 +2,7 @@
 
 #include "NetworkCppDemo.h"
 #include "BatteryPickup.h"
-
+#include "Net/UnrealNetwork.h"
 
 
 
@@ -12,11 +12,29 @@ ABatteryPickup::ABatteryPickup()
 
 	GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
 	GetStaticMeshComponent()->SetSimulatePhysics(true);
+
+	BatteryPower = 200.f;
 }
 
-void ABatteryPickup::WasCollected_Implementation()
+void ABatteryPickup::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	Super::WasCollected_Implementation();
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	Destroy();
+	DOREPLIFETIME(ABatteryPickup, BatteryPower);
+}
+
+void ABatteryPickup::PickedUpBy(APawn * Pawn)
+{
+	Super::PickedUpBy(Pawn);
+
+	if (Role == ROLE_Authority)
+	{
+		//Get clients time to play vfx, etc... before destroying the battery
+		SetLifeSpan(2.f);//destroy self by time
+	}
+}
+
+float ABatteryPickup::GetPower()
+{
+	return BatteryPower;
 }

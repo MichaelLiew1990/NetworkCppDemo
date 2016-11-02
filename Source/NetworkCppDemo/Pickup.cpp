@@ -13,6 +13,8 @@ APickup::APickup()
 	//Pickups do not need to tick every frame
 	PrimaryActorTick.bCanEverTick = false;
 
+	GetStaticMeshComponent()->bGenerateOverlapEvents = true;
+
 	if (Role == ROLE_Authority)
 	{
 		bIsActive = true;
@@ -31,7 +33,7 @@ bool APickup::IsActive()
 	return bIsActive;
 }
 
-void APickup::SetActiveState(bool b)
+void APickup::SetActive(bool b)
 {
 	if (Role == ROLE_Authority)
 	{
@@ -41,10 +43,26 @@ void APickup::SetActiveState(bool b)
 
 void APickup::WasCollected_Implementation() 
 {
-	UE_LOG(LogTemp, Warning, TEXT("APickup::WasCollected_Implementation"));
+	UE_LOG(LogClass, Log, TEXT("APickup::WasCollected_Implementation %s"), *GetName());
+}
+
+void APickup::PickedUpBy(APawn * Pawn)
+{
+	if (Role == ROLE_Authority)
+	{
+		PickupInstigater = Pawn;
+		//Notify clients of the picked up action
+		ClientOnPickedUpBy(Pawn);
+	}
 }
 
 void APickup::OnRep_IsActive()
 {
 
+}
+
+void APickup::ClientOnPickedUpBy_Implementation(APawn * Pawn)
+{
+	PickupInstigater = Pawn;
+	WasCollected();
 }

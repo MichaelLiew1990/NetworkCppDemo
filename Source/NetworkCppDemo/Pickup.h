@@ -23,11 +23,14 @@ public:
 	bool IsActive();
 
 	UFUNCTION(BlueprintCallable, Category = "Pickup")
-	void SetActiveState(bool b);
+	void SetActive(bool b);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Pickup")
 	void WasCollected();
 	virtual void WasCollected_Implementation();
+
+	UFUNCTION(BlueprintAuthorityOnly, Category = "Pickup")
+	virtual void PickedUpBy(APawn* Pawn);
 
 protected:
 	//True when the pickup can be use, false when pickups is deactivated
@@ -36,4 +39,12 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_IsActive();
+
+	//This is the Pawn whe pick up the pickup
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pickup")
+	APawn* PickupInstigater;
+
+private:
+	UFUNCTION(NetMulticast, Unreliable)
+	void ClientOnPickedUpBy(APawn* Pawn);
 };
