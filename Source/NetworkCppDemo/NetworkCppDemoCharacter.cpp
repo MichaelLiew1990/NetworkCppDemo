@@ -5,6 +5,7 @@
 #include "NetworkCppDemoCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "Pickup.h"
+#include "BatteryPickup.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ANetworkCppDemoCharacter
@@ -46,6 +47,9 @@ ANetworkCppDemoCharacter::ANetworkCppDemoCharacter()
 	CollectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollectionSphere"));
 	CollectionSphere->SetupAttachment(RootComponent);
 	CollectionSphere->SetSphereRadius(CollectionSphereRadius);
+
+	InitialPower = 2000.f;
+	CurrentPower = InitialPower;
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -104,6 +108,8 @@ bool ANetworkCppDemoCharacter::ServerCollectPickups_Validate()
 
 void ANetworkCppDemoCharacter::ServerCollectPickups_Implementation()
 {
+	float TotalPower = 0.0f;
+
 	if (Role == ROLE_Authority)
 	{
 		TArray<AActor*> CollectedActors;
@@ -113,10 +119,20 @@ void ANetworkCppDemoCharacter::ServerCollectPickups_Implementation()
 			APickup* TestPickup = Cast<APickup>(CollectedActors[i]);
 			if (TestPickup != NULL && !TestPickup->IsPendingKill() && TestPickup->IsActive())
 			{
+				if (ABatteryPickup* const TestBattery = Cast<ABatteryPickup>(TestPickup))
+				{
+					TotalPower += TestBattery->GetPower();
+				}
+
 				TestPickup->PickedUpBy(this);
 				TestPickup->SetActive(false);
 			}
 		}
+	}
+
+	// Change the character's power based on what we picked up
+	if (!FMath::IsNearlyZero(TotalPower)) {
+		UpdatePower(TotalPower);
 	}
 }
 
