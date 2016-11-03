@@ -16,14 +16,22 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Power")
 	float GetDecayRate();
 
+	UFUNCTION(BlueprintPure, Category = "Power")
+	float GetPowerToWinMultiplier();
+
+protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Power")
 	float PowerDrainDelay;
 	FTimerHandle PowerDrainTimer;
 
-protected:
 	//The rate at which characters lose power (% of InitialPower per second)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Power", meta = (BlueprintProtected = "true"))
 	float DecayRate;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Power", meta = (BlueprintProtected = "true"))
+	float PowerToWinMultiplier;
+
+	int32 DeadPlayerCount;
 
 private:
 	void DrainPowerOverTime();

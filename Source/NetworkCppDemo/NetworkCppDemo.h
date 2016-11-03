@@ -3,6 +3,6 @@
 #ifndef __NETWORKCPPDEMO_H__
 #define __NETWORKCPPDEMO_H__
 
-#include "EngineMinimal.h"
+#include "Engine.h"
 
 #endif

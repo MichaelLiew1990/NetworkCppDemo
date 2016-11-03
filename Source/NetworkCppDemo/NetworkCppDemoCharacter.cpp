@@ -41,7 +41,7 @@ ANetworkCppDemoCharacter::ANetworkCppDemoCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	CollectionSphereRadius = 120.f;
+	CollectionSphereRadius = 150.f;
 
 	// Create a follow CollectionSphere
 	CollectionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollectionSphere"));
@@ -50,6 +50,9 @@ ANetworkCppDemoCharacter::ANetworkCppDemoCharacter()
 
 	InitialPower = 2000.f;
 	CurrentPower = InitialPower;
+
+	BaseSpeed = 10.f;
+	SpeedFactor = 0.75f;
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -106,6 +109,11 @@ bool ANetworkCppDemoCharacter::ServerCollectPickups_Validate()
 	return true;
 }
 
+void ANetworkCppDemoCharacter::OnRep_CurrentPower()
+{
+	PowerChangeEffect();
+}
+
 void ANetworkCppDemoCharacter::ServerCollectPickups_Implementation()
 {
 	float TotalPower = 0.0f;
@@ -151,6 +159,10 @@ void ANetworkCppDemoCharacter::UpdatePower(float Delta)
 	if (Role == ROLE_Authority)
 	{
 		CurrentPower += Delta;
+		GetCharacterMovement()->MaxWalkSpeed = BaseSpeed + SpeedFactor*CurrentPower;
+
+		//Fake the rep notify (litten server doesn't get the RepNotify automatically)
+		OnRep_CurrentPower();
 	}
 }
 
