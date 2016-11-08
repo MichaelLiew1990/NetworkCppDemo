@@ -34,6 +34,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Power")
 	EBatteryPlayState GetCurrentState() const;
 
+	UPROPERTY(Replicated, BlueprintReadWrite, Category = "Power")
+	FString WinningPlayerName;
+
 	void SetCurrentState(EBatteryPlayState State);
 
 	UFUNCTION()

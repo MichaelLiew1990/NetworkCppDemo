@@ -109,6 +109,31 @@ bool ANetworkCppDemoCharacter::ServerCollectPickups_Validate()
 	return true;
 }
 
+void ANetworkCppDemoCharacter::OnPlayerDeath_Implementation()
+{
+	//disconnect controller form pawn
+	DetachFromControllerPendingDestroy();
+	if (GetMesh()) {
+		GetMesh()->SetCollisionProfileName(FName("Ragdoll"));
+	}
+	SetActorEnableCollision(true);
+
+	//Ragdoll (init physics)
+	GetMesh()->SetAllBodiesSimulatePhysics(true);
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->WakeAllRigidBodies();
+	GetMesh()->bBlendPhysics = true;
+
+	//disable movement
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->SetComponentTickEnabled(false);
+
+	//disable collisions on the capsule
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+}
+
 void ANetworkCppDemoCharacter::OnRep_CurrentPower()
 {
 	PowerChangeEffect();

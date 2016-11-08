@@ -4,6 +4,7 @@
 #include "NetworkCppDemoGameMode.h"
 #include "NetworkCppDemoCharacter.h"
 #include "NetworkCppDemoGameState.h"
+#include "SpawnVolume.h"
 
 ANetworkCppDemoGameMode::ANetworkCppDemoGameMode()
 {
@@ -21,7 +22,7 @@ ANetworkCppDemoGameMode::ANetworkCppDemoGameMode()
 
 	GameStateClass = ANetworkCppDemoGameState::StaticClass();
 
-	DecayRate = 0.02f;
+	DecayRate = 0.05f;
 
 	PowerDrainDelay = 0.25f;
 
@@ -32,7 +33,7 @@ ANetworkCppDemoGameMode::ANetworkCppDemoGameMode()
 
 void ANetworkCppDemoGameMode::BeginPlay()
 {
-	GetWorldTimerManager().SetTimer(PowerDrainTimer, this, &ANetworkCppDemoGameMode::DrainPowerOverTime, PowerDrainDelay, true);
+	Super::BeginPlay();
 
 	UWorld* World = GetWorld();
 	check(World);
@@ -41,7 +42,15 @@ void ANetworkCppDemoGameMode::BeginPlay()
 
 	DeadPlayerCount = 0;
 
-	MyGameState->SetCurrentState(EBatteryPlayState::EPlaying);
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(World, ASpawnVolume::StaticClass(), FoundActors);
+	for (auto Actor : FoundActors) {
+		if (ASpawnVolume* Test = Cast<ASpawnVolume>(Actor)) {
+			SpawnVolumeActors.AddUnique(Test);
+		}
+	}
+
+	HandleNewState(EBatteryPlayState::EPlaying);
 
 	for (FConstControllerIterator It = World->GetControllerIterator(); It; It++)
 	{
@@ -81,7 +90,8 @@ void ANetworkCppDemoGameMode::DrainPowerOverTime()
 			{
 				if (BatteryCharacter->GetCurrentPower() > MyGameState->PowerToWin)
 				{
-					MyGameState->SetCurrentState(EBatteryPlayState::EWon);
+					MyGameState->WinningPlayerName = BatteryCharacter->GetName();
+					HandleNewState(EBatteryPlayState::EWon);
 				}
 				else if (BatteryCharacter->GetCurrentPower() > 0)
 				{
@@ -91,15 +101,57 @@ void ANetworkCppDemoGameMode::DrainPowerOverTime()
 				else
 				{
 					// Poor player died.
-					BatteryCharacter->DetachFromControllerPendingDestroy();
+					BatteryCharacter->OnPlayerDeath();
 					DeadPlayerCount += 1;
 
 					if (DeadPlayerCount >= GetNumPlayers())
 					{
-						MyGameState->SetCurrentState(EBatteryPlayState::EGameOver);
+						HandleNewState(EBatteryPlayState::EGameOver);
 					}
 				}
 			}
+		}
+	}
+}
+
+void ANetworkCppDemoGameMode::HandleNewState(EBatteryPlayState NewState)
+{
+	UWorld* World = GetWorld();
+	check(World);
+	ANetworkCppDemoGameState* MyGameState = Cast<ANetworkCppDemoGameState>(GameState);
+	check(MyGameState);
+
+	if (NewState != MyGameState->GetCurrentState()) {
+		MyGameState->SetCurrentState(NewState);
+		switch (NewState) {
+		case EBatteryPlayState::EPlaying:
+		{
+			for (ASpawnVolume* SpawnVolume : SpawnVolumeActors) {
+				SpawnVolume->SetSpawningActive(true);
+			}
+			GetWorldTimerManager().SetTimer(PowerDrainTimer, this, &ANetworkCppDemoGameMode::DrainPowerOverTime, PowerDrainDelay, true);
+			break;
+		}
+		case EBatteryPlayState::EGameOver:
+		{
+			for (ASpawnVolume* SpawnVolume : SpawnVolumeActors) {
+				SpawnVolume->SetSpawningActive(false);
+			}
+			GetWorldTimerManager().ClearTimer(PowerDrainTimer);
+			break;
+		}
+		case EBatteryPlayState::EWon:
+		{
+			for (ASpawnVolume* SpawnVolume : SpawnVolumeActors) {
+				SpawnVolume->SetSpawningActive(false);
+			}
+			GetWorldTimerManager().ClearTimer(PowerDrainTimer);
+			break;
+		}
+		case EBatteryPlayState::EUnknown:
+			break;
+		default:
+			break;
 		}
 	}
 }

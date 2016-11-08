@@ -19,15 +19,6 @@ ASpawnVolume::ASpawnVolume()
 	}
 }
 
-void ASpawnVolume::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	//Delay for a bit before spawning the next pickup
-	SpawnDelay = FMath::FRandRange(SpawnDelayRangeLow, SpawnDelayRangeHigh);
-	GetWorldTimerManager().SetTimer(SpawnTimer, this, &ASpawnVolume::SpawnPickup, SpawnDelay, false);
-}
-
 void ASpawnVolume::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
@@ -48,6 +39,19 @@ FVector ASpawnVolume::GetRandomPointInVolume()
 		return UKismetMathLibrary::RandomPointInBoundingBox(SpawnOrigin, SpawnExtent);
 	}
 	return FVector();
+}
+
+void ASpawnVolume::SetSpawningActive(bool b)
+{
+	if (Role == ROLE_Authority) {
+		if (b) {
+			//Delay for a bit before spawning the next pickup
+			SpawnDelay = FMath::FRandRange(SpawnDelayRangeLow, SpawnDelayRangeHigh);
+			GetWorldTimerManager().SetTimer(SpawnTimer, this, &ASpawnVolume::SpawnPickup, SpawnDelay, false);
+		} else {
+			GetWorldTimerManager().ClearTimer(SpawnTimer);
+		}
+	}
 }
 
 void ASpawnVolume::SpawnPickup()
@@ -73,9 +77,7 @@ void ASpawnVolume::SpawnPickup()
 			//drop the new pickup into the world
 			APickup* const SpawnPickup = World->SpawnActor<APickup>(WhatToSpawn, SpawnLocation, SpawnRotation, SpawnParams);
 
-			//Delay for a bit before spawning the next pickup
-			SpawnDelay = FMath::FRandRange(SpawnDelayRangeLow, SpawnDelayRangeHigh);
-			GetWorldTimerManager().SetTimer(SpawnTimer, this, &ASpawnVolume::SpawnPickup, SpawnDelay, false);
+			SetSpawningActive(true);
 		}
 	}
 }

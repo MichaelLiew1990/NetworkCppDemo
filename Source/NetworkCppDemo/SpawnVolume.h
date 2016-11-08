@@ -13,13 +13,15 @@ class NETWORKCPPDEMO_API ASpawnVolume : public AActor
 public:	
 	ASpawnVolume();
 
-	virtual void BeginPlay() override;
 	virtual void Tick( float DeltaSeconds ) override;
 
 	FORCEINLINE UBoxComponent* GetWhereToSpawn() const;
 
 	UFUNCTION(BlueprintPure, Category = "Spawning")
 	FVector GetRandomPointInVolume();
+
+	UFUNCTION(BlueprintCallable, Category = "Spawning")
+	void SetSpawningActive(bool b);
 
 	FTimerHandle SpawnTimer;
 

@@ -18,6 +18,7 @@ void ANetworkCppDemoGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 
 	DOREPLIFETIME(ANetworkCppDemoGameState, PowerToWin);
 	DOREPLIFETIME(ANetworkCppDemoGameState, CurrentState);
+	DOREPLIFETIME(ANetworkCppDemoGameState, WinningPlayerName);
 }
 
 EBatteryPlayState ANetworkCppDemoGameState::GetCurrentState() const
